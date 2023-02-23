@@ -6,6 +6,7 @@ import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
+import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
@@ -15,11 +16,9 @@ import com.google.api.services.drive.model.File
 import com.google.api.services.drive.model.FileList
 import lombok.RequiredArgsConstructor
 import org.springframework.stereotype.Service
-import java.io.FileNotFoundException
-import java.io.IOException
-import java.io.InputStream
-import java.io.InputStreamReader
+import java.io.*
 import java.security.GeneralSecurityException
+import java.sql.Blob
 import java.util.*
 
 @Service
@@ -42,7 +41,7 @@ class DriveService {
      * Global instance of the scopes required by this quickstart.
      * If modifying these scopes, delete your previously saved tokens/ folder.
      */
-    val SCOPES: List<String> = Collections.singletonList(DriveScopes.DRIVE_METADATA_READONLY)
+    val SCOPES: List<String> = Collections.singletonList(DriveScopes.DRIVE)
     val CREDENTIALS_FILE_PATH = "/credentials.json"
 
     /**
@@ -65,10 +64,27 @@ class DriveService {
             .setDataStoreFactory(FileDataStoreFactory(java.io.File(TOKENS_DIRECTORY_PATH)))
             .setAccessType("offline")
             .build()
-        val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setPort(8091).build()
+        val receiver: LocalServerReceiver = LocalServerReceiver.Builder().setPort(8093).build()
         val credential: Credential = AuthorizationCodeInstalledApp(flow, receiver).authorize("user")
         //returns an authorized Credential object.
         return credential
+    }
+    @Throws(IOException::class)
+    fun dnwnloadFile(id: String): ByteArrayOutputStream {
+        val transport: NetHttpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        val service: Drive = Drive.Builder(transport, JSON_FACTORY, getCredentials(transport))
+            .setApplicationName(APPLICATION_NAME)
+            .build()
+        try{
+           val outputStream: OutputStream =  ByteArrayOutputStream()
+            service.files().get(id)
+                .executeMediaAndDownloadTo(outputStream)
+
+            return outputStream as ByteArrayOutputStream
+        }catch(e: GoogleJsonResponseException){
+            System.err.println("Unable to move file: " + e.getDetails())
+            throw e;
+        }
     }
 
     @Throws(IOException::class, GeneralSecurityException::class)
