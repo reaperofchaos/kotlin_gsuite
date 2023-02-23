@@ -7,6 +7,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
+import com.google.api.client.http.FileContent
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.client.util.store.FileDataStoreFactory
@@ -16,10 +17,11 @@ import com.google.api.services.drive.model.File
 import com.google.api.services.drive.model.FileList
 import lombok.RequiredArgsConstructor
 import org.springframework.stereotype.Service
+import org.springframework.web.multipart.MultipartFile
 import java.io.*
 import java.security.GeneralSecurityException
-import java.sql.Blob
 import java.util.*
+
 
 @Service
 @RequiredArgsConstructor
@@ -70,6 +72,7 @@ class DriveService {
         return credential
     }
     @Throws(IOException::class)
+
     fun dnwnloadFile(id: String): ByteArrayOutputStream {
         val transport: NetHttpTransport = GoogleNetHttpTransport.newTrustedTransport();
         val service: Drive = Drive.Builder(transport, JSON_FACTORY, getCredentials(transport))
@@ -87,6 +90,29 @@ class DriveService {
         }
     }
 
+    @Throws(IOException::class)
+    fun upload(name: String?, mimeType: String?): String{
+        val transport: NetHttpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        val service: Drive = Drive.Builder(transport, JSON_FACTORY, getCredentials(transport))
+            .setApplicationName(APPLICATION_NAME)
+            .build()
+        val fileMetadata: File = File()
+        fileMetadata.setName(name)
+        val filePath: java.io.File = java.io.File(name)
+        val mediaContent = FileContent(mimeType, filePath)
+        try {
+
+            val file: File = service.files().create(fileMetadata, mediaContent)
+                .setFields("id")
+                .execute()
+            return file.id
+        }catch(e: GoogleJsonResponseException){
+            System.err.println("Unable to upload file: " + e.getDetails());
+            throw e;
+        }
+
+
+    }
     @Throws(IOException::class, GeneralSecurityException::class)
     fun list10Files(): String{
         try {
