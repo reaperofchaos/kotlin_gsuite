@@ -75,8 +75,32 @@ class DriveService {
         //returns an authorized Credential object.
         return credential
     }
-    @Throws(IOException::class)
 
+    @Throws(IOException::class)
+    fun getFolderContents(id: String): List<DownloadFile>{
+        val transport: NetHttpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        val service: Drive = Drive.Builder(transport, JSON_FACTORY, getCredentials(transport))
+            .setApplicationName(APPLICATION_NAME)
+            .build()
+        try{
+            val files: MutableList<DownloadFile> = mutableListOf()
+            var pageToken: String? = null;
+            do {
+                val result: FileList = service.files().list()
+                    .setQ("'" + id + "' in parents")
+                    .setPageToken(pageToken)
+                    .execute()
+                for (file: File in result.getFiles()) {
+                    files.add(mapper.fileToDownloadFile(file))
+                }
+                pageToken = result.getNextPageToken();
+            }while(pageToken !== null)
+            return files;
+        }catch(e: GoogleJsonResponseException){
+            System.err.println("Unable to move file: " + e.getDetails())
+            throw e;
+        }
+    }
     fun getFolders(): List<DownloadFile>{
         val transport: NetHttpTransport = GoogleNetHttpTransport.newTrustedTransport();
         val service: Drive = Drive.Builder(transport, JSON_FACTORY, getCredentials(transport))

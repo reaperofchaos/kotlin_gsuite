@@ -41,6 +41,12 @@ class SampleController {
         return files
     }
 
+    @GetMapping("/info/files/{folderId}")
+    fun getFilesInFolder(@PathVariable folderId: String): List<DownloadFile>{
+        val files: List<DownloadFile> = driveService.getFolderContents(folderId)
+        return files
+    }
+
     @GetMapping("/download/{id}")
     fun download(@PathVariable id: String): ResponseEntity<ByteArray> {
         val headers = HttpHeaders()
