@@ -2,6 +2,7 @@ package com.jomondb.gsuite.web.rest
 
 import com.google.api.client.http.AbstractInputStreamContent
 import com.google.api.client.http.FileContent
+import com.jomondb.gsuite.domain.DownloadFile
 import com.jomondb.gsuite.service.DriveService
 import com.jomondb.gsuite.service.FileService
 import org.springframework.http.HttpHeaders
@@ -26,6 +27,20 @@ class SampleController {
     fun test(): String{
         return driveService.list10Files();
     }
+
+
+    @GetMapping("/folders")
+    fun getFolders(): List<DownloadFile>{
+        val files: List<DownloadFile> = driveService.getFolders()
+        return files
+    }
+
+    @GetMapping("/info/{name}")
+    fun getInfoByName(@PathVariable name: String): List<DownloadFile>{
+        val files: List<DownloadFile> = driveService.getFileInfo(name)
+        return files
+    }
+
     @GetMapping("/download/{id}")
     fun download(@PathVariable id: String): ResponseEntity<ByteArray> {
         val headers = HttpHeaders()
@@ -46,8 +61,9 @@ class SampleController {
         try{
             fileService.init();
             val path = fileService.save(file);
-
-            return ResponseEntity.status(HttpStatus.OK).body("File: " + path.toString() + " was uploaded");
+            driveService.upload(file.originalFilename, file.contentType, path)
+            val id = fileService.deleteAll();
+            return ResponseEntity.status(HttpStatus.OK).body("File: " + path.toString() + " was uploaded with a drive id of  " + id);
         }catch(e: Exception){
             message = "Could not upload the file: " + file.originalFilename + ". Error: " + e.message;
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(message);

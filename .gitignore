@@ -40,3 +40,4 @@ out/
 ### credentials
 src/main/resources/credentials.json
 tokens
+uploads/*

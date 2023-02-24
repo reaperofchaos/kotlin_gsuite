@@ -15,10 +15,13 @@ import com.google.api.services.drive.Drive
 import com.google.api.services.drive.DriveScopes
 import com.google.api.services.drive.model.File
 import com.google.api.services.drive.model.FileList
+import com.jomondb.gsuite.domain.DownloadFile
+import com.jomondb.gsuite.mapper.GsuiteFileMapper
 import lombok.RequiredArgsConstructor
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.io.*
+import java.nio.file.Path
 import java.security.GeneralSecurityException
 import java.util.*
 
@@ -26,6 +29,7 @@ import java.util.*
 @Service
 @RequiredArgsConstructor
 class DriveService {
+    val mapper: GsuiteFileMapper = GsuiteFileMapper();
     /**
      * Application name
      */
@@ -73,6 +77,56 @@ class DriveService {
     }
     @Throws(IOException::class)
 
+    fun getFolders(): List<DownloadFile>{
+        val transport: NetHttpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        val service: Drive = Drive.Builder(transport, JSON_FACTORY, getCredentials(transport))
+            .setApplicationName(APPLICATION_NAME)
+            .build()
+        try{
+            val files: MutableList<DownloadFile> = mutableListOf()
+                val result: FileList = service.files().list()
+                    .setQ("mimeType = 'application/vnd.google-apps.folder' and parents in 'root' ")
+                    .setSpaces("drive")
+                    .setPageSize(100)
+                    .execute()
+                for (file: File in result.getFiles()) {
+                    files.add(mapper.fileToDownloadFile(file))
+                }
+
+            return files;
+        }catch(e: GoogleJsonResponseException){
+            System.err.println("Unable to move file: " + e.getDetails())
+            throw e;
+        }
+    }
+    fun getFileInfo(name: String): List<DownloadFile>{
+        val transport: NetHttpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        val service: Drive = Drive.Builder(transport, JSON_FACTORY, getCredentials(transport))
+            .setApplicationName(APPLICATION_NAME)
+            .build()
+        try{
+            val files: MutableList<DownloadFile> = mutableListOf()
+            var pageToken: String? = null;
+            do {
+                val result: FileList = service.files().list()
+                    .setQ("""name='${name}'""")
+                    .setSpaces("drive")
+                    .setPageToken(pageToken)
+                    .setPageSize(10)
+                    .execute()
+                for (file: File in result.getFiles()) {
+                    files.add(mapper.fileToDownloadFile(file))
+                }
+                pageToken = result.getNextPageToken();
+            }while(pageToken != null)
+
+            return files;
+        }catch(e: GoogleJsonResponseException){
+            System.err.println("Unable to move file: " + e.getDetails())
+            throw e;
+        }
+    }
+
     fun dnwnloadFile(id: String): ByteArrayOutputStream {
         val transport: NetHttpTransport = GoogleNetHttpTransport.newTrustedTransport();
         val service: Drive = Drive.Builder(transport, JSON_FACTORY, getCredentials(transport))
@@ -91,20 +145,22 @@ class DriveService {
     }
 
     @Throws(IOException::class)
-    fun upload(name: String?, mimeType: String?): String{
+    fun upload(name: String?, mimeType: String?, path: Path): String{
         val transport: NetHttpTransport = GoogleNetHttpTransport.newTrustedTransport();
         val service: Drive = Drive.Builder(transport, JSON_FACTORY, getCredentials(transport))
             .setApplicationName(APPLICATION_NAME)
             .build()
         val fileMetadata: File = File()
+        System.out.println("Uploading " + name + " type: " + mimeType + " path: " + path)
         fileMetadata.setName(name)
-        val filePath: java.io.File = java.io.File(name)
-        val mediaContent = FileContent(mimeType, filePath)
+        val file: java.io.File = java.io.File(path.toString())
+        val mediaContent = FileContent(mimeType, file)
         try {
 
             val file: File = service.files().create(fileMetadata, mediaContent)
                 .setFields("id")
                 .execute()
+            System.out.println("file id" + file.id)
             return file.id
         }catch(e: GoogleJsonResponseException){
             System.err.println("Unable to upload file: " + e.getDetails());
