@@ -24,10 +24,8 @@ class FileService {
 
     fun save(file: MultipartFile): Path{
         try{
-            Files.copy(file.inputStream, this.root.resolve(file.originalFilename))
-            val filepath = Paths.get(root.toString(), file.originalFilename)
-
-            return filepath;
+            file.originalFilename?.let { this.root.resolve(it) }?.let { Files.copy(file.inputStream, it) }
+            return Paths.get(root.toString(), file.originalFilename)
         }catch(e: Exception){
            throw Exception(e.message)
         }
@@ -35,10 +33,10 @@ class FileService {
 
     fun load(fileName: String): Resource{
         try{
-            val file: Path = root.resolve(fileName);
+            val file: Path = root.resolve(fileName)
             val resource: Resource = UrlResource(file.toUri())
 
-            if(resource.exists() || resource.isReadable()){
+            if(resource.exists() || resource.isReadable){
                 return resource
             }else{
                 throw Exception("Could not read the file!")
@@ -55,9 +53,11 @@ class FileService {
     fun loadAll(): Stream<Path> {
         try{
             return Files.walk(this.root, 1).filter { path: Path -> path != this.root }.map { other: Path? ->
-                this.root.relativize(
-                    other
-                )
+                other?.let {
+                    this.root.relativize(
+                        it
+                    )
+                }
             }
         }catch(e: IOException){
             throw Exception(e.message)
