@@ -1,5 +1,7 @@
 package com.jomondb.gsuite.web.rest
 
+import com.jomondb.gsuite.dataobject.ReesponseDTO
+import com.jomondb.gsuite.mapper.FilePathMapper
 import com.jomondb.gsuite.service.DriveService
 import com.jomondb.gsuite.service.FileService
 import org.springframework.http.HttpStatus
@@ -18,6 +20,7 @@ class ArticleController {
 
     @PostMapping("/upload")
     fun uploadFile(
+        @RequestParam("srcId") srcId: String,
         @RequestParam("file") file: MultipartFile,
         @RequestParam("type") type: String,
         @RequestParam("language") language: String?,
@@ -27,22 +30,24 @@ class ArticleController {
         @RequestParam("volume") volume: String?,
         @RequestParam("issue") issue: String?,
         @RequestParam("chapterTitle") chapterTitle: String?,
-        ): ResponseEntity<String> {
+        ): ReesponseDTO {
         return try{
             fileService.init()
             val path = fileService.save(file)
             println(path.toString())
             val contentType: String = if(file.contentType !== null) file.contentType!! else ""
-            val id = driveService.uploadSource(file.name, contentType,
+            val fileName = "$srcId.pdf"
+            val id = driveService.uploadSource(fileName, contentType,
                 path, type, language, title, year, journal, volume, issue, chapterTitle )
-
+            val location = FilePathMapper.createFilePath(srcId, type, language, year, title, journal, volume, issue, chapterTitle)
 
             fileService.deleteAll()
-            return ResponseEntity.status(HttpStatus.OK).body("File: $path was uploaded with a drive id of  $id")
+            return ReesponseDTO(driveId = id, location = location, message = "File: $path was uploaded with a drive id of  $id" )
+
         }catch(e: Exception){
             val message = "Could not upload the file: " + file.originalFilename + ". Error: " + e.message
             fileService.deleteAll()
-            ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(message)
+            return ReesponseDTO(driveId = "", location = "", message = message )
         }
     }
 }

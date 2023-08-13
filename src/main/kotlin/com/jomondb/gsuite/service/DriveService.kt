@@ -328,9 +328,9 @@ class DriveService {
                         val issueId = createFolderIfNotFound(issue, volumeId).id
                         println("issueId id " + issueId)
 
-                        upload(fileName, mimeType, path, issueId)
+                        return upload(fileName, mimeType, path, issueId)
                     }else{
-                        upload(fileName, mimeType, path, volumeId)
+                        return upload(fileName, mimeType, path, volumeId)
                     }
                 }
             }

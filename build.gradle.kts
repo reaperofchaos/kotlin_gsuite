@@ -6,6 +6,7 @@ plugins {
 	kotlin("jvm") version "1.7.22"
 	kotlin("plugin.spring") version "1.7.22"
 	kotlin("plugin.jpa") version "1.7.22"
+
 }
 
 group = "com.jomondb"
@@ -25,12 +26,12 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-	implementation("org.projectlombok:lombok:1.18.20")
+	implementation("org.projectlombok:lombok:1.18.26")
 	runtimeOnly("com.h2database:h2")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
-	implementation("com.google.api-client:google-api-client:2.0.0")
+	implementation("com.google.api-client:google-api-client:2.2.0")
 	implementation("com.google.oauth-client:google-oauth-client-jetty:1.34.1")
-	implementation("com.google.apis:google-api-services-drive:v3-rev20220815-2.0.0")
+	implementation("com.google.apis:google-api-services-drive:v3-rev20230212-2.0.0")
 }
 
 
@@ -45,3 +46,4 @@ tasks.withType<KotlinCompile> {
 tasks.withType<Test> {
 	useJUnitPlatform()
 }
+
