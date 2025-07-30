@@ -1,0 +1,38 @@
+server:
+  port: ${PORT:8091}
+spring:
+  application:
+    name: gsuite
+  serverlet:
+    multipart:
+      max-file-size: 500mb
+      max-request-size: 500mb
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        prefer-ip-address: true
+        register: true
+        deregister: true
+        service-name: ${spring.application.name}
+        instance-id: ${spring.application.name}-${random.uuid}
+        healthCheckPath: /actuator/health
+        healthCheckInterval: 10s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
