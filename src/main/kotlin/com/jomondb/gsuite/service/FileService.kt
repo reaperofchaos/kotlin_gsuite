@@ -1,7 +1,11 @@
 package com.jomondb.gsuite.service
 
+
+import com.jomondb.gsuite.mapper.GsuiteFileMapper
+import com.jomondb.gsuite.utils.constants.SERVICE_TEMP_FOLDER
 import org.springframework.core.io.Resource
 import org.springframework.core.io.UrlResource
+import org.springframework.stereotype.Service
 import org.springframework.util.FileSystemUtils
 import org.springframework.web.multipart.MultipartFile
 import java.io.IOException
@@ -10,9 +14,14 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.stream.Stream
 
-class FileService {
-    private val root: Path = Paths.get("uploads")
+/** Service to handle temporary storage of file in service. */
+@Service
+class FileService() {
+    private val root: Path = Paths.get(SERVICE_TEMP_FOLDER)
 
+    /**
+     * Creates an upload folder in service.
+     */
     @Throws(IOException::class)
     fun init(){
         try{
@@ -22,6 +31,9 @@ class FileService {
         }
     }
 
+    /**
+     * Saves the file to the service's upload folder.
+     */
     fun save(file: MultipartFile): Path{
         try{
             file.originalFilename?.let { this.root.resolve(it) }?.let { Files.copy(file.inputStream, it) }
@@ -31,6 +43,12 @@ class FileService {
         }
     }
 
+    /**
+     * Function to get the file from the service upload folder.
+     *
+     * @param fileName String
+     * @return {@link Resource}
+     */
     fun load(fileName: String): Resource{
         try{
             val file: Path = root.resolve(fileName)
@@ -46,10 +64,18 @@ class FileService {
         }
     }
 
+    /**
+     * Deletes all files in the temporary upload folder.
+     */
     fun deleteAll(){
         FileSystemUtils.deleteRecursively(root.toFile())
     }
 
+    /**
+     * Retrieves the paths of all files in the temporary upload folder.
+     *
+     * @return {@link Stream} of {@link Path}
+     */
     fun loadAll(): Stream<Path> {
         try{
             return Files.walk(this.root, 1).filter { path: Path -> path != this.root }.map { other: Path? ->
